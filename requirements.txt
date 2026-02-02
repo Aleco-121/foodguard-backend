@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+gunicorn
+httpx
+passlib[bcrypt]
+bcrypt==4.0.1
+python-multipart
+google-generativeai
+supabase
+python-dotenv
+psutil

@@ -1,0 +1,2052 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoodGuard Elite</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        :root {
+            --primary: #006a6a;
+            --on-primary: #ffffff;
+            --primary-container: #d1e8e8;
+            --secondary: #4a6363;
+            --background: #f4fbf9;
+            --surface: #ffffff;
+            --on-surface: #191c1c;
+            --safe: #2e7d32;
+            --warning: #f59e0b;
+            /* Yuka-style Yellow/Amber */
+            --caution: #fbbf24;
+            /* Yuka-style Yellow/Amber */
+            --danger: #ba1a1a;
+            --nav-bg: #eff5f3;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--background);
+            color: var(--on-surface);
+            margin: 0;
+            padding-bottom: 80px;
+            min-height: 100vh;
+        }
+
+        /* Splash */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 4000;
+            transition: opacity 0.8s, visibility 0.8s;
+        }
+
+        #splash-logo {
+            width: 120px;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.08);
+            }
+        }
+
+        .hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        header {
+            width: 100%;
+            padding: 15px;
+            background: var(--surface);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 1px 10px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: var(--primary);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+
+        .page {
+            display: none;
+            width: 100%;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 28px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+        }
+
+        .card[onclick]:active {
+            transform: scale(0.98);
+        }
+
+        /* Scoring Gauge */
+        .score-container {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .gauge-wrapper {
+            width: 140px;
+            height: 140px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .gauge-circle {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 12px solid #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 1s;
+        }
+
+        .score-val {
+            font-size: 2.2rem;
+            font-weight: 600;
+        }
+
+        .score-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 10px;
+            text-transform: uppercase;
+        }
+
+        /* Nutrient Levels */
+        .nutrient-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .nutrient-item {
+            padding: 12px;
+            border-radius: 18px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            border: 1px solid #f0f0f0;
+        }
+
+        .nutrient-item b {
+            font-size: 0.85rem;
+        }
+
+        .nutrient-item span.val {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 4px 0;
+        }
+
+        .level-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 12px;
+            text-transform: uppercase;
+        }
+
+        /* Additives Premium Styles */
+        .additives-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-top: 25px;
+            margin-bottom: 12px;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #additives-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .additive-tag {
+            background: white;
+            border: 1px solid #eee;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+        }
+
+        .additive-tag:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+            border-color: var(--primary);
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .dot.safe {
+            background: var(--safe);
+            box-shadow: 0 0 8px var(--safe);
+        }
+
+        .dot.warning {
+            background: var(--caution);
+            box-shadow: 0 0 8px var(--caution);
+        }
+
+        .dot.danger {
+            background: var(--danger);
+            box-shadow: 0 0 8px var(--danger);
+        }
+
+        /* Modal Clinical Polish */
+        .modal-card {
+            background: white;
+            width: 90%;
+            max-width: 450px;
+            border-radius: 30px;
+            padding: 30px;
+            position: relative;
+            animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 15px;
+        }
+
+        .modal-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--dark);
+            margin: 0;
+        }
+
+        .modal-section {
+            margin-bottom: 20px;
+        }
+
+        .modal-section b {
+            display: block;
+            font-size: 0.75rem;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .modal-text {
+            font-size: 0.95rem;
+            color: #444;
+            line-height: 1.6;
+        }
+
+        .study-box {
+            background: #f8fafc;
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            border-radius: 0 15px 15px 0;
+            margin-top: 10px;
+        }
+
+        .level-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .level-high,
+        .level-danger {
+            background: #ffebee;
+            color: #ba1a1a;
+        }
+
+        .level-moderate,
+        .level-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .level-low,
+        .level-safe {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        /* Additives */
+        .additives-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 25px 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .additive-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 20px;
+            background: #f5f5f5;
+            margin: 0 6px 10px 0;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .additive-tag:hover {
+            border-color: var(--primary);
+            background: #fff;
+            transform: translateY(-2px);
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .dot.danger {
+            background: var(--danger);
+        }
+
+        .dot.warning {
+            background: var(--caution);
+        }
+
+        .dot.safe {
+            background: var(--safe);
+        }
+
+        /* Modal */
+        #modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 5000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-card {
+            background: white;
+            border-radius: 32px;
+            width: 100%;
+            max-width: 400px;
+            padding: 25px;
+            animation: modalPop 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        }
+
+        @keyframes modalPop {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .modal-close {
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        /* Modern Toggle Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e0e0e0;
+            transition: .3s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        input:checked+.slider {
+            background-color: var(--primary);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(24px);
+        }
+
+        .settings-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .settings-row:last-child {
+            border-bottom: none;
+        }
+
+        .settings-info b {
+            display: block;
+            font-size: 0.95rem;
+            color: var(--on-surface);
+        }
+
+        .settings-info span {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        /* Auth/Profile */
+        .auth-input {
+            width: 100%;
+            padding: 16px;
+            border-radius: 16px;
+            border: 1px solid #ddd;
+            margin-bottom: 15px;
+            font-family: inherit;
+        }
+
+        .btn-prime {
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 18px;
+            border-radius: 18px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 75px;
+            background: var(--nav-bg);
+            display: flex;
+            justify-content: space-around;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            color: #707070;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        #reader-container {
+            width: 100% !important;
+            border-radius: 28px;
+            overflow: hidden;
+            margin-top: 15px;
+            display: none;
+            border: 4px solid var(--primary-container);
+            background: #000;
+            position: relative;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        #reader {
+            width: 100% !important;
+            border: none !important;
+        }
+
+        #reader video {
+            width: 100% !important;
+            object-fit: cover !important;
+            border-radius: 24px;
+        }
+
+        #reader__scan_region {
+            border: none !important;
+        }
+
+        #reader__dashboard {
+            display: none !important;
+        }
+
+        /* Scan Overlay */
+        .scan-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .scan-line {
+            width: 80%;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.5);
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            box-shadow: 0 0 15px #fff;
+            animation: scanAnim 2s ease-in-out infinite;
+        }
+
+        @keyframes scanAnim {
+
+            0%,
+            100% {
+                transform: translateY(-40px);
+                opacity: 0.3;
+            }
+
+            50% {
+                transform: translateY(40px);
+                opacity: 0.8;
+            }
+        }
+
+        /* Elite Dashboard */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 15px;
+            border-radius: 20px;
+            text-align: center;
+            border: 1px solid rgba(0, 106, 106, 0.1);
+        }
+
+        .stat-val {
+            display: block;
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .decoder-input-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .decoder-input {
+            flex: 1;
+            padding: 12px 18px;
+            border-radius: 15px;
+            border: 2px solid #e0eeee;
+            background: #fdfdfd;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .decoder-input:focus {
+            border-color: var(--primary);
+        }
+
+        .loader {
+            display: none;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Premium Greeting Styles */
+        .premium-greeting {
+            margin: 15px 5px 25px;
+            animation: fadeInWelcome 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .greeting-label {
+            font-size: 0.85rem;
+            color: #7a8c8c;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .greeting-name {
+            display: block;
+            font-size: 2.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), #00b3b3);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1.5px;
+            line-height: 1.1;
+        }
+
+        @keyframes fadeInWelcome {
+            from {
+                opacity: 0;
+                transform: translateY(-12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Elite Modal Expansions */
+        .modal-section.clickable {
+            cursor: pointer;
+            transition: background 0.2s;
+            border-radius: 8px;
+            padding: 8px;
+            margin: 5px -8px;
+        }
+
+        .modal-section.clickable:hover {
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        .modal-section.clickable b::after {
+            content: ' ▼';
+            font-size: 0.8em;
+            opacity: 0.5;
+            float: right;
+        }
+
+        .detail-text {
+            font-size: 0.85rem;
+            color: #555;
+            background: #f8fcfc;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 8px;
+            border-left: 3px solid var(--primary);
+            line-height: 1.5;
+            animation: fadeInWelcome 0.3s ease;
+        }
+
+        /* IA Page Styles */
+        .ia-option-card {
+            background: white;
+            border: 1px solid rgba(0, 106, 106, 0.1);
+            border-radius: 24px;
+            padding: 20px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+        }
+
+        .ia-option-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-3px) scale(1.01);
+            box-shadow: 0 12px 25px rgba(0, 106, 106, 0.08);
+            background: linear-gradient(to right, white, #f4fbf9);
+        }
+
+        .ia-option-icon {
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, var(--primary-container) 0%, #e0f2f1 100%);
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 20px;
+            flex-shrink: 0;
+            box-shadow: inset 0 2px 5px rgba(255, 255, 255, 0.8);
+        }
+
+        .ia-option-content {
+            flex-grow: 1;
+        }
+
+        .ia-option-content b {
+            display: block;
+            color: var(--on-surface);
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .ia-option-content span {
+            display: block;
+            color: #7a8a8a;
+            font-size: 0.85rem;
+            line-height: 1.3;
+        }
+
+        .ia-option-arrow {
+            color: var(--primary);
+            font-size: 1.2rem;
+            opacity: 0.3;
+            transition: transform 0.3s;
+        }
+
+        .ia-option-card:hover .ia-option-arrow {
+            opacity: 1;
+            transform: translateX(5px);
+        }
+
+        .recipe-card {
+            background: white;
+            border-radius: 28px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 30px rgba(0, 106, 106, 0.08);
+            border: 1px solid rgba(0, 106, 106, 0.05);
+            transition: transform 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .recipe-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, var(--primary), #4db6ac);
+        }
+
+        .recipe-title {
+            color: var(--on-surface);
+            margin: 0 0 16px 0;
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .recipe-section {
+            margin-bottom: 20px;
+        }
+
+        .recipe-section-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--primary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .recipe-ingredients-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .recipe-ing-tag {
+            background: #f0f7f7;
+            color: #4a6363;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .recipe-steps {
+            padding-left: 0;
+            margin: 0;
+            list-style: none;
+            counter-reset: step-counter;
+        }
+
+        .recipe-step-item {
+            position: relative;
+            padding-left: 35px;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #444;
+        }
+
+        .recipe-step-item::before {
+            counter-increment: step-counter;
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            top: 2px;
+            width: 24px;
+            height: 24px;
+            background: var(--primary-container);
+            color: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .recipe-nutrition-box {
+            background: linear-gradient(135deg, #f8fcfc 0%, #e0eeee 100%);
+            padding: 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 106, 106, 0.1);
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .history-ingredient-tag {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            background: #f0f7f7;
+            margin: 0 5px 8px 0;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .history-ingredient-tag.selected {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Alternatives */
+        .alternatives-container {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 2px dashed #e0eeee;
+        }
+
+        .alt-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .alt-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border: 1px solid #f0f7f7;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+        }
+
+        .alt-card:hover {
+            border-color: var(--primary);
+            transform: translateX(8px);
+            background: #f8fcfc;
+        }
+
+        .alt-img {
+            width: 55px;
+            height: 55px;
+            object-fit: contain;
+            border-radius: 12px;
+            background: #f5f5f5;
+            padding: 4px;
+        }
+
+        .alt-info {
+            flex-grow: 1;
+        }
+
+        .alt-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--on-surface);
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .alt-score {
+            font-size: 0.8rem;
+            color: var(--safe);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        @keyframes dotPulse {
+
+            0%,
+            80%,
+            100% {
+                scale: 0;
+                opacity: 0.3;
+            }
+
+            40% {
+                scale: 1;
+                opacity: 1;
+            }
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #f0f7f7;
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="splash-screen">
+        <img src="/static/logo.png" id="splash-logo">
+        <h2 style="color: var(--primary); margin-top: 15px;">FoodGuard Elite</h2>
+    </div>
+
+    <header>
+        <img src="/static/logo.png" style="width: 25px;">
+        <h1>FoodGuard</h1>
+    </header>
+
+    <div class="container">
+        <!-- HOME PAGE -->
+        <div id="page-home" class="page active">
+            <div class="premium-greeting">
+                <span class="greeting-label">Hola,</span>
+                <span id="welcome-user" class="greeting-name">Elite User</span>
+            </div>
+            <div id="home-tip" class="card"
+                style="background: linear-gradient(135deg, #006a6a, #004d4d); color: white; border: none; position: relative; overflow: hidden;">
+                <p style="margin:0; font-size: 0.8rem; opacity: 0.8; text-transform: uppercase;">💡 Tip de Salud del Día
+                </p>
+                <p id="tip-text" style="margin: 10px 0 0 0; font-size: 1rem; line-height: 1.5;">Cargando consejo
+                    inteligente...</p>
+                <span
+                    style="position: absolute; right: -15px; bottom: -15px; font-size: 5rem; opacity: 0.1; transform: rotate(-15deg);">✨</span>
+            </div>
+
+            <div class="card" style="text-align: center; border: 2px dashed #d1e8e8; background: #fdfdfd;">
+                <h3 style="margin-top:0">Analizador Inteligente</h3>
+                <p style="color:#666; font-size: 0.9rem; margin-bottom: 20px;">Escanea el código de barras para ver el
+                    desglose elite.</p>
+                <button class="btn-prime" onclick="startScanner()">📷 Iniciar Cámara</button>
+                <div id="reader-container">
+                    <div id="reader"></div>
+                    <div class="scan-overlay" id="reader-overlay" style="display:none;">
+                        <div class="scan-line"></div>
+                        <div
+                            style="position:absolute; bottom:20px; color:white; font-size:0.7rem; background:rgba(0,0,0,0.5); padding:5px 12px; border-radius:10px; text-transform:uppercase; letter-spacing:1px;">
+                            Mantén a 3-5 cm para Macro</div>
+                    </div>
+                </div>
+                <button id="btn-stop" class="btn-prime" onclick="stopScanner()"
+                    style="display:none; background: var(--warning); margin-top: 15px;">🛑 Detener</button>
+            </div>
+
+            <div id="loader" class="loader"></div>
+            <div id="elite-result"></div>
+
+            <!-- Dashboard Elite -->
+            <div id="stats-container" class="card"
+                style="display:none; background: var(--primary-container); border: none;">
+                <h3 style="margin:0; font-size: 1.1rem; color: var(--primary);">Estadísticas Vitales</h3>
+                <div class="stats-grid">
+                    <div class="stat-card"><span class="stat-val" id="stat-total">0</span><span
+                            class="stat-label">Escaneos</span></div>
+                    <div class="stat-card"><span class="stat-val" id="stat-avg">0</span><span class="stat-label">Score
+                            Medio</span></div>
+                    <div class="stat-card"
+                        style="grid-column: span 2; display: flex; justify-content: space-around; align-items: center;">
+                        <div style="text-align: center;"><span class="stat-val" style="color: var(--safe);"
+                                id="stat-safe">0</span><small>Seguros</small></div>
+                        <div style="text-align: center;"><span class="stat-val" style="color: var(--warning);"
+                                id="stat-warn">0</span><small>Alertas</small></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Decodificador Manual -->
+            <div class="card" style="border: 2px solid #e0eeee;">
+                <h3 style="margin:0; font-size: 1.1rem;">Decodificador Clínico</h3>
+                <p style="color:#666; font-size: 0.85rem; margin: 5px 0 0 0;">Busca cualquier aditivo o código E
+                    manualmente.</p>
+                <div class="decoder-input-group">
+                    <input type="text" id="decoder-query" class="decoder-input" placeholder="Ej: E120 o Tartrazina">
+                    <button class="btn-prime" style="padding: 10px 20px; width: auto; margin:0;"
+                        onclick="lookupAdditive()">🔍</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- HISTORY PAGE -->
+        <div id="page-history" class="page">
+            <h2 style="margin-bottom: 20px;">Mi Historial Elite</h2>
+            <div id="history-search-container" style="display: none; margin-bottom: 15px;">
+                <input type="text" id="history-search" class="auth-input" placeholder="Buscar producto por nombre..."
+                    oninput="filterHistory()" style="margin-bottom: 0; padding: 12px 15px;">
+            </div>
+            <div id="history-list"></div>
+        </div>
+
+        <!-- IA PAGE -->
+        <div id="page-ia" class="page">
+            <h2 style="margin-bottom: 20px;">Chef IA Personal</h2>
+            <p style="color:#666; margin-bottom: 25px;">Selecciona ingredientes para que la IA genere recetas saludables
+                para ti.</p>
+
+            <div id="ia-menu">
+                <div class="ia-option-card" onclick="openIAMethod('text')">
+                    <div class="ia-option-icon">✍️</div>
+                    <div class="ia-option-content">
+                        <b>Escribir ingredientes</b>
+                        <span>Añade lo que tienes a mano manualmente</span>
+                    </div>
+                    <div class="ia-option-arrow">→</div>
+                </div>
+                <div class="ia-option-card" onclick="openIAMethod('camera')">
+                    <div class="ia-option-icon">📸</div>
+                    <div class="ia-option-content">
+                        <b>Foto a ingredientes</b>
+                        <span>Usa la cámara para detectar alimentos</span>
+                    </div>
+                    <div class="ia-option-arrow">→</div>
+                </div>
+                <div class="ia-option-card" onclick="openIAMethod('history')">
+                    <div class="ia-option-icon">📜</div>
+                    <div class="ia-option-content">
+                        <b>Desde mi historial</b>
+                        <span>Selecciona productos que ya has escaneado</span>
+                    </div>
+                    <div class="ia-option-arrow">→</div>
+                </div>
+            </div>
+
+            <div id="ia-input-area" style="display:none; margin-top: 20px;" class="card">
+                <div id="ia-method-header"
+                    style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #f0f7f7;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div onclick="closeIAMethod()"
+                            style="cursor:pointer; background: var(--primary-container); color: var(--primary); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800;">
+                            ←</div>
+                        <span style="font-weight:700; font-size: 1.1rem; color: var(--on-surface);">Ingredientes</span>
+                    </div>
+                </div>
+
+                <div id="ia-method-text" style="display:none;">
+                    <textarea id="ia-text-input" class="auth-input" placeholder="Ej: tomate, huevo, aguacate..."
+                        style="height: 100px; resize: none;"></textarea>
+                </div>
+
+                <div id="ia-method-history" style="display:none;">
+                    <p style="font-size: 0.8rem; color: #888; margin-bottom: 10px;">Selecciona los productos de tu
+                        historial:</p>
+                    <div id="ia-history-chips"></div>
+                </div>
+
+                <div id="ia-method-camera" style="display:none;">
+                    <p style="color:#666; font-size: 0.9rem; text-align: center; margin-bottom: 20px;">Haz una foto a
+                        tus ingredientes para que la IA los reconozca automáticamente.</p>
+
+                    <div id="ia-vision-container" style="text-align: center; margin-bottom: 15px;">
+                        <input type="file" id="ia-camera-input" accept="image/*" capture="environment"
+                            style="display:none;" onchange="handleIAPhoto(event)">
+                        <button class="btn-prime" onclick="document.getElementById('ia-camera-input').click()"
+                            style="display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0 auto; background: linear-gradient(135deg, #00897b, #004d40);">
+                            📸 Tomar Foto o Subir
+                        </button>
+                    </div>
+
+                    <div id="ia-vision-loading" style="display:none; text-align:center; padding: 15px;">
+                        <div class="spinner"></div>
+                        <p style="color:var(--primary); font-size: 0.85rem; font-weight: 600;">La IA está analizando tu
+                            foto...</p>
+                    </div>
+
+                    <div id="ia-detected-ingredients"
+                        style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;">
+                    </div>
+                </div>
+
+                <button class="btn-prime" style="margin-top: 15px;" id="btn-generate-recipes"
+                    onclick="generateRecipes()">🪄 Generar Recetas</button>
+            </div>
+
+            <div id="ia-loader" class="loader"></div>
+            <div id="ia-results" style="margin-top: 25px;"></div>
+        </div>
+
+        <!-- PROFILE PAGE -->
+        <div id="page-profile" class="page">
+            <div id="auth-view" class="card" style="text-align:center;">
+                <h2 id="auth-title">Iniciar Sesión</h2>
+                <p style="color:#888; margin-bottom: 25px;">Guarda tus ajustes y activa el historial elite.</p>
+                <input type="text" id="auth-user" class="auth-input" placeholder="Usuario">
+                <input type="password" id="auth-pass" class="auth-input" placeholder="Contraseña">
+                <button class="btn-prime" onclick="handleAuth()">Entrar</button>
+                <p style="margin-top: 15px; font-size: 0.9rem; color: #666; cursor: pointer;" onclick="toggleAuth()">
+                    ¿Sin cuenta? <span style="text-decoration: underline; color: var(--primary);">Regístrate</span></p>
+            </div>
+
+            <div id="profile-view" style="display:none;">
+                <div class="card"
+                    style="display:flex; justify-content:space-between; align-items:center; background: var(--primary-container);">
+                    <div>
+                        <b id="user-display"
+                            style="font-size:1.2rem; color:var(--primary); text-transform:capitalize;">Usuario</b>
+                        <p style="margin:0; font-size: 0.8rem; color: var(--primary);">Nivel Elite Activo</p>
+                    </div>
+                    <button onclick="logout()"
+                        style="background: white; border: none; color: var(--danger); padding:8px 15px; border-radius:12px; font-weight: 600;">Salir</button>
+                </div>
+                <h3 style="margin: 25px 0 10px;">Personalizar Alertas</h3>
+                <div class="card" id="settings-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="showPage('home')" id="nav-home"><i>🏠</i><span>Inicio</span></div>
+        <div class="nav-item" onclick="showPage('ia')" id="nav-ia"><i>🪄</i><span>IA</span></div>
+        <div class="nav-item" onclick="showPage('history')" id="nav-history"><i>🕒</i><span>Historial</span></div>
+        <div class="nav-item" onclick="showPage('profile')" id="nav-profile"><i>👤</i><span>Perfil</span></div>
+    </div>
+
+    <!-- Additives Modal -->
+    <div id="modal-overlay" class="modal-overlay" style="display:none;" onclick="closeModal()">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div id="modal-safety" style="margin-bottom: 10px;"></div>
+                <h3 class="modal-title" id="modal-name"></h3>
+            </div>
+            <div class="modal-section" id="modal-risk-section" style="display:none;">
+                <b>Perfil de Riesgo Clínico</b>
+                <p class="modal-text" id="modal-risk" style="color: #6366f1; font-weight: 600; font-size: 1.1em;"></p>
+            </div>
+            <div class="modal-section" id="modal-adi-section" style="display:none;">
+                <b>Alerta Metabolismo (IDA/DDA)</b>
+                <p class="modal-text" id="modal-adi" style="color: var(--danger); font-weight: 700;"></p>
+            </div>
+            <div class="modal-section clickable" onclick="toggleDetail('modal-harm-detail')">
+                <b>Efectos en la Salud</b>
+                <p class="modal-text" id="modal-harm"></p>
+                <div id="modal-harm-detail" class="detail-text" style="display:none;"></div>
+            </div>
+            <div class="modal-section clickable" onclick="toggleDetail('modal-study-detail')">
+                <b>Evidencia Científica</b>
+                <div class="study-box">
+                    <p class="modal-text" style="margin:0; font-style: italic; font-size: 0.85rem;" id="modal-study">
+                    </p>
+                </div>
+                <div id="modal-study-detail" class="detail-text" style="display:none;"></div>
+            </div>
+            <button class="btn-prime" style="width:100%; margin-top:10px;" onclick="closeModal()">Entendido</button>
+        </div>
+    </div>
+
+    <script>
+        function closeModal() {
+            document.getElementById('modal-overlay').style.display = 'none';
+            const buyBtn = document.getElementById('modal-buy-btn');
+            if (buyBtn) buyBtn.remove();
+
+            // Restore hidden sections
+            document.getElementById('modal-risk-section').style.display = 'block';
+            document.getElementById('modal-adi-section').style.display = 'block';
+        }
+    </script>
+
+    <script>
+        let currentUser = null;
+        let authMode = 'login';
+        let html5QrCode = null;
+        let fullHistory = [];
+        let additivesCache = {}; // Storage to avoid attribute quote breaks
+        const fields = [
+            { id: 'gluten_free', label: 'Sin Gluten', sub: 'Trigo, cebada, centeno...' },
+            { id: 'lactose_free', label: 'Sin Lactosa', sub: 'Leche, quesos, suero...' },
+            { id: 'low_sugar', label: 'Bajo en Azúcar', sub: 'Evita azúcares añadidos' },
+            { id: 'low_fat', label: 'Bajo en Grasas', sub: 'Control de lípidos y niveles altos' },
+            { id: 'no_nuts', label: 'Sin Frutos Secos', sub: 'Cacahuetes, almendras...' },
+            { id: 'no_palm_oil', label: 'Sin Aceite de Palma', sub: 'Grasas saturadas vegetales' },
+            { id: 'vegetarian', label: 'Vegetariano', sub: 'Sin carne ni pescado' },
+            { id: 'vegan', label: 'Vegano', sub: 'Sin productos animales' },
+            { id: 'msg', label: 'Sin Glutamato', sub: 'MSG, E621, Potenciadores...' }
+        ];
+
+        window.onload = () => {
+            renderSettings();
+            const saved = localStorage.getItem('foodguard_elite');
+            if (saved) {
+                const data = JSON.parse(saved);
+                currentUser = data.username;
+                if (data.settings) applySettings(data.settings);
+                updateUI();
+            } else {
+                const local = localStorage.getItem('foodguard_guest_settings');
+                if (local) applySettings(JSON.parse(local));
+            }
+            fetchDailyTip();
+            setTimeout(() => document.getElementById('splash-screen').classList.add('hidden'), 1500);
+            if (currentUser) startHeartbeat();
+        };
+
+        function startHeartbeat() {
+            if (window.heartbeatInterval) return;
+            window.heartbeatInterval = setInterval(async () => {
+                if (!currentUser) return clearInterval(window.heartbeatInterval);
+                try {
+                    await fetch('/ping', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: currentUser })
+                    });
+                } catch (e) { }
+            }, 30000); // 30s
+        }
+
+        function showPage(id) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('page-' + id).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.getElementById('nav-' + id).classList.add('active');
+            if (id !== 'home') stopScanner();
+            if (id === 'history') loadHistory();
+        }
+
+        async function fetchDailyTip() {
+            try {
+                const r = await fetch('/daily-tip');
+                const d = await r.json();
+                document.getElementById('tip-text').innerText = d.tip;
+            } catch (e) { document.getElementById('home-tip').style.display = 'none'; }
+        }
+
+        function toggleAuth() {
+            authMode = authMode === 'login' ? 'register' : 'login';
+            document.getElementById('auth-title').innerText = authMode === 'login' ? 'Iniciar Sesión' : 'Registro Elite';
+        }
+
+        async function handleAuth() {
+            const u = document.getElementById('auth-user').value;
+            const p = document.getElementById('auth-pass').value;
+            if (!u || !p) return alert("Rellena los campos");
+            const r = await fetch('/' + authMode, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) });
+            if (r.ok) {
+                if (authMode === 'register') { alert("¡Usuario registrado!"); toggleAuth(); }
+                else {
+                    const res = await r.json();
+                    currentUser = u;
+                    localStorage.setItem('foodguard_elite', JSON.stringify({ username: u, settings: res.settings }));
+                    applySettings(res.settings);
+                    updateUI();
+                    startHeartbeat();
+                }
+            } else alert("Error de autenticación");
+        }
+
+        function updateUI() {
+            const isL = !!currentUser;
+            document.getElementById('auth-view').style.display = isL ? 'none' : 'block';
+            document.getElementById('profile-view').style.display = isL ? 'block' : 'none';
+            document.getElementById('history-search-container').style.display = isL ? 'block' : 'none';
+
+            // Update Welcome Message
+            const welcome = document.getElementById('welcome-user');
+            if (welcome) {
+                welcome.innerText = isL ? currentUser : 'Invitado';
+            }
+
+            if (isL) {
+                document.getElementById('user-display').innerText = currentUser;
+                loadHistory();
+                loadStats();
+            } else {
+                document.getElementById('stats-container').style.display = 'none';
+                document.getElementById('history-list').innerHTML = '<p style="color: #666; text-align: center; margin-top: 20px;">Inicia sesión para ver tu historial elite.</p>';
+            }
+        }
+
+        async function loadStats() {
+            if (!currentUser) return;
+            try {
+                const r = await fetch('/stats/' + currentUser);
+                const d = await r.json();
+                if (d.total > 0) {
+                    document.getElementById('stats-container').style.display = 'block';
+                    document.getElementById('stat-total').innerText = d.total;
+                    document.getElementById('stat-avg').innerText = d.avg;
+                    document.getElementById('stat-safe').innerText = d.safe;
+                    document.getElementById('stat-warn').innerText = d.warning;
+                } else {
+                    document.getElementById('stats-container').style.display = 'none';
+                }
+            } catch (e) { }
+        }
+
+        async function lookupAdditive() {
+            const q = document.getElementById('decoder-query').value.trim();
+            if (!q) return;
+            try {
+                const r = await fetch('/lookup-additive', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: q }) });
+                const d = await r.json();
+                if (d.error) return alert("No se encontró información clínica para este término.");
+
+                // Show in the standard clinical modal
+                additivesCache['manual_lookup'] = d;
+                showAdditive('manual_lookup');
+            } catch (e) { alert("Error en el servidor"); }
+        }
+
+        function logout() { currentUser = null; localStorage.removeItem('foodguard_elite'); updateUI(); showPage('home'); }
+
+        function renderSettings() {
+            const html = fields.map(f => `
+                <div class="settings-row">
+                    <div class="settings-info"><b>${f.label}</b><span>${f.sub}</span></div>
+                    <label class="switch">
+                        <input type="checkbox" id="set-${f.id}" onchange="syncSettings()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            `).join('');
+            document.getElementById('settings-list').innerHTML = html;
+        }
+
+        async function syncSettings() {
+            const settings = {};
+            fields.forEach(f => {
+                const el = document.getElementById('set-' + f.id);
+                if (el) settings[f.id] = el.checked;
+            });
+
+            if (currentUser) {
+                const data = JSON.parse(localStorage.getItem('foodguard_elite') || '{}');
+                data.settings = settings;
+                localStorage.setItem('foodguard_elite', JSON.stringify(data));
+                await fetch('/save-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser, settings }) });
+            } else {
+                localStorage.setItem('foodguard_guest_settings', JSON.stringify(settings));
+            }
+        }
+
+        function applySettings(settings) {
+            if (!settings) return;
+            fields.forEach(f => {
+                const el = document.getElementById('set-' + f.id);
+                if (el && settings[f.id] !== undefined) el.checked = settings[f.id];
+            });
+        }
+
+        async function loadHistory() {
+            if (!currentUser) return;
+            try {
+                const r = await fetch('/history/' + currentUser);
+                if (r.ok) { fullHistory = await r.json(); filterHistory(); }
+            } catch (e) { console.error(e); }
+        }
+
+        function filterHistory() {
+            const query = document.getElementById('history-search').value.toLowerCase();
+            const filtered = fullHistory.filter(item => item.name.toLowerCase().includes(query));
+            renderHistoryList(filtered);
+        }
+
+        function renderHistoryList(items) {
+            const list = document.getElementById('history-list');
+            if (items.length === 0) {
+                list.innerHTML = `<p style="color: #888; text-align: center; margin-top: 20px;">No se encontraron resultados.</p>`;
+                return;
+            }
+            list.innerHTML = items.map(i => `
+                <div class="card" onclick="reView('${i.barcode}')" style="display: flex; gap: 15px; align-items: center; padding: 15px; margin-bottom: 12px; cursor: pointer; transition: transform 0.2s;">
+                    <div style="width: 12px; height: 12px; border-radius: 50%; background: ${i.status === 'SAFE' ? 'var(--safe)' : 'var(--danger)'}"></div>
+                    <div style="flex: 1;">
+                        <b style="font-size: 0.95rem;">${i.name}</b>
+                        <p style="margin: 3px 0 0 0; font-size: 0.8rem; color: #888;">${new Date(i.date).toLocaleString('es-ES')}</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="display: block; font-size: 0.9rem; font-weight: 600; color: ${i.score > 70 ? 'var(--safe)' : i.score > 40 ? 'var(--caution)' : 'var(--danger)'}">${i.score}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function reView(barcode) {
+            showPage('home');
+            analyze(barcode);
+        }
+
+        async function startScanner() {
+            // 1. Show UI immediately
+            document.getElementById('elite-result').innerHTML = '';
+            document.getElementById('reader-container').style.display = 'block';
+            document.getElementById('reader-overlay').style.display = 'flex';
+            document.getElementById('btn-stop').style.display = 'block';
+
+            const reader = document.getElementById('reader');
+
+            // 2. Cleanup previous instance safely
+            try {
+                if (html5QrCode) {
+                    if (html5QrCode.isScanning) await html5QrCode.stop();
+                    await html5QrCode.clear();
+                }
+            } catch (e) { console.warn("Cleanup error", e); }
+
+            reader.innerHTML = ''; // Safe now, only clears library junk
+
+            // 3. Re-initialize
+            try {
+                html5QrCode = new Html5Qrcode("reader");
+                const formats = [
+                    Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
+                    Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E,
+                    Html5QrcodeSupportedFormats.CODE_128
+                ];
+
+                const config = {
+                    fps: 20,
+                    qrbox: (w, h) => ({ width: Math.min(w * 0.8, 300), height: Math.min(h * 0.4, 150) }),
+                    aspectRatio: 1.0,
+                    formatsToSupport: formats,
+                    videoConstraints: { facingMode: "environment", advanced: [{ zoom: 1.2 }] }
+                };
+
+                await html5QrCode.start({ facingMode: "environment" }, config, async (c) => {
+                    if (navigator.vibrate) navigator.vibrate(50);
+                    await stopScanner();
+                    analyze(c);
+                });
+            } catch (err) {
+                console.error("Scanner failed", err);
+                alert("Error de cámara: " + (err.message || "Permiso denegado"));
+                await stopScanner();
+            }
+
+            document.getElementById('reader-container').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        async function stopScanner() {
+            try {
+                if (html5QrCode) {
+                    if (html5QrCode.isScanning) await html5QrCode.stop();
+                    await html5QrCode.clear();
+                }
+            } catch (e) { console.warn("Stop error", e); }
+            finally {
+                document.getElementById('reader-container').style.display = 'none';
+                document.getElementById('reader-overlay').style.display = 'none';
+                document.getElementById('btn-stop').style.display = 'none';
+                document.getElementById('reader').innerHTML = '';
+            }
+        }
+
+        async function analyze(barcode) {
+            document.getElementById('loader').style.display = 'block';
+            const settings = {};
+            fields.forEach(f => settings[f.id] = document.getElementById('set-' + f.id).checked);
+            try {
+                const r = await fetch('/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser, barcode, settings }) });
+                const d = await r.json();
+                renderEliteResult(d);
+                if (currentUser) loadHistory();
+            } catch (e) { alert("Error al analizar"); }
+            finally { document.getElementById('loader').style.display = 'none'; }
+        }
+
+        function renderEliteResult(d) {
+            console.log("DEBUG: Rendering result with alternatives:", d.alternatives);
+            currentAlternatives = []; // Clear previous
+            const scoreColor = d.score > 70 ? 'var(--safe)' : d.score > 40 ? 'var(--caution)' : 'var(--danger)';
+            const n = d.nutriments || {};
+
+            // Populate additives cache
+            additivesCache = {};
+            const additivesHtml = d.additives.map((a, idx) => {
+                const key = `add_${idx}`;
+                additivesCache[key] = a;
+                return `<div class="additive-tag" onclick="showAdditive('${key}')"><span class="dot ${a.safety}"></span><b>${a.code}</b><span>${a.name}</span></div>`;
+            }).join('');
+
+            const html = `
+                <div class="card">
+                    <div class="score-container">
+                        <div class="gauge-wrapper"><div class="gauge-circle" style="border-color: ${scoreColor}"><span class="score-val" style="color: ${scoreColor}">${d.score}</span></div></div>
+                        <div class="score-label" style="color: ${scoreColor}">Calidad Nutricional</div>
+                    </div>
+                    ${d.matches.length > 0 ? `
+                        <div style="margin: 20px 0; background: #fff1f1; border-left: 5px solid var(--danger); padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(229, 57, 53, 0.1);">
+                            <div style="display:flex; align-items:center; gap:10px; margin-bottom: 8px;">
+                                <span style="font-size: 1.5rem;">⚠️</span>
+                                <b style="color: var(--danger); font-size: 1.1rem;">ALERTA DE SALUD</b>
+                            </div>
+                            <div style="color: #666; font-size: 0.85rem; margin-bottom: 10px;">Este producto no coincide con tus restricciones guardadas:</div>
+                            ${d.matches.map(m => `
+                                <div style="display:flex; align-items:flex-start; gap:8px; background: white; padding: 10px; border-radius: 8px; margin-bottom: 6px; border: 1px solid #fee;">
+                                    <span style="color: var(--danger); font-weight: bold;">✕</span>
+                                    <span style="font-size: 0.95rem; color: #b00; line-height: 1.4;">${m}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                    <div style="display:flex; gap:15px; align-items:center; margin-bottom: 20px;">
+                        <img src="${d.image_url}" style="width:100px; height:100px; object-fit:contain; border-radius:15px; background:#f5f5f5;">
+                        <div><h2 style="margin:0;">${d.product_name}</h2><p style="color:#666; font-size:0.8rem; margin:5px 0 0 0;">Barcode: ${d.barcode || '---'}</p></div>
+                    </div>
+                    <div style="margin-bottom: 15px; background: #f0f7f7; padding: 15px; border-radius: 20px; text-align: center;">
+                        <b style="color: var(--primary); font-size: 1.1rem;">${Math.round(n.energy_100g || 0)} kcal</b>
+                        <p style="margin: 0; font-size: 0.8rem; color: #666;">Calorías por 100g</p>
+                    </div>
+                    <div class="nutrient-grid">
+                        <div class="nutrient-item"><b>AZÚCAR</b><span class="val">${(n.sugars_100g || 0).toFixed(1)}g</span><span class="level-badge level-${d.nutrients.sugars || 'low'}">${d.nutrients.sugars || 'low'}</span></div>
+                        <div class="nutrient-item"><b>SAL</b><span class="val">${(n.salt_100g || 0).toFixed(1)}g</span><span class="level-badge level-${d.nutrients.salt || 'low'}">${d.nutrients.salt || 'low'}</span></div>
+                        <div class="nutrient-item"><b>FIBRA</b><span class="val">${(n.fiber_100g || 0).toFixed(1)}g</span><span class="level-badge level-${d.nutrients.fiber === 'high' ? 'safe' : 'moderate'}">${d.nutrients.fiber || 'low'}</span></div>
+                        <div class="nutrient-item"><b>PROTEÍNA</b><span class="val">${(n.proteins_100g || 0).toFixed(1)}g</span><span class="level-badge level-${d.nutrients.proteins === 'high' ? 'safe' : 'moderate'}">${d.nutrients.proteins || 'low'}</span></div>
+                        <div class="nutrient-item"><b>GRASAS SAT.</b><span class="val">${(n['saturated-fat_100g'] || 0).toFixed(1)}g</span><span class="level-badge level-${d.nutrients['saturated-fat'] || 'low'}">${d.nutrients['saturated-fat'] || 'low'}</span></div>
+                        <div class="nutrient-item"><b>GRASAS</b><span class="val">${(n.fat_100g || 0).toFixed(1)}g</span><span class="level-badge level-${d.nutrients.fat || 'low'}">${d.nutrients.fat || 'low'}</span></div>
+                    </div>
+                    <div class="additives-title">🧪 Aditivos Detectados (${d.additives.length})</div>
+                    <div id="additives-list">${additivesHtml}</div>
+
+                    <div class="alternatives-container">
+                        <div class="alt-title"><span>✨</span> Alternativas más saludables</div>
+                        <div id="alternatives-list">
+                            <div style="text-align:center; padding: 25px; background: #fafdfd; border-radius: 20px; border: 1px dashed #e0eeee;">
+                                <div class="spinner"></div>
+                                <p style="color:#666; font-size: 0.85rem; font-weight: 500;">Analizando mejores opciones...</p>
+                                <p style="color:#999; font-size: 0.75rem; margin-top: 5px;">Esto puede tardar unos segundos</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #f0f0f0;">
+                         <button class="btn-prime" style="background: var(--primary-container); color: var(--primary); font-size: 0.85rem;" onclick="document.getElementById('full-ingredients').style.display='block'; this.style.display='none'">Ver ingredientes completos</button>
+                         <div id="full-ingredients" style="display:none;">
+                            <p style="font-size:0.8rem; color:#666; line-height:1.4; margin-top:10px;">${d.ingredients}</p>
+                         </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('elite-result').innerHTML = html;
+            document.getElementById('elite-result').scrollIntoView({ behavior: 'smooth' });
+
+            // Start lazy loading of alternatives
+            loadAlternatives(d.barcode, d.categories, d.product_name);
+        }
+
+        async function loadAlternatives(barcode, categories, product_name) {
+            try {
+                const r = await fetch('/alternatives', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ barcode, categories, product_name })
+                });
+                const alts = await r.json();
+                renderAlternatives(alts);
+            } catch (e) {
+                console.error("Error loading alternatives:", e);
+                document.getElementById('alternatives-list').innerHTML = `<p style="color: #888; font-size: 0.85rem; text-align: center; margin: 10px 0;">Error al cargar sugerencias.</p>`;
+            }
+        }
+
+        function renderAlternatives(alts) {
+            const list = document.getElementById('alternatives-list');
+            if (!alts || alts.length === 0) {
+                list.innerHTML = `<p style="color: #888; font-size: 0.85rem; text-align: center; margin: 10px 0;">No se encontraron alternativas más saludables para este producto específico.</p>`;
+                return;
+            }
+
+            list.innerHTML = alts.map((alt, idx) => {
+                currentAlternatives[idx] = alt;
+                return `
+                    <div class="alt-card" onclick="showAlternative(${idx})">
+                        <img src="${alt.image_url || '/static/logo.png'}" class="alt-img">
+                        <div class="alt-info">
+                            <span class="alt-name">${alt.name}</span>
+                            <span class="alt-score">⭐ ${alt.score} - Muy Saludable</span>
+                        </div>
+                        <div style="color: var(--primary); font-size: 1.2rem;">→</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        let currentAlternatives = [];
+        function showAlternative(index) {
+            const alt = currentAlternatives[index];
+            if (!alt) return;
+
+            document.getElementById('modal-name').innerText = alt.name;
+            document.getElementById('modal-safety').innerHTML = `<span class="level-badge level-safe" style="padding: 5px 15px; border-radius: 10px;">Recomendación Saludable</span>`;
+            document.getElementById('modal-harm').innerText = alt.summary;
+            document.getElementById('modal-study').innerText = "Este producto tiene una mejor composición nutricional y menos aditivos que la opción original.";
+
+            document.getElementById('modal-risk-section').style.display = 'none';
+            document.getElementById('modal-adi-section').style.display = 'none';
+
+            // Manage Buy Button
+            let buyBtn = document.getElementById('modal-buy-btn');
+            if (buyBtn) buyBtn.remove();
+
+            buyBtn = document.createElement('a');
+            buyBtn.id = 'modal-buy-btn';
+            buyBtn.className = 'btn-prime';
+            buyBtn.style.cssText = "display: block; text-decoration: none; text-align: center; margin-top: 20px; background: #006a6a; color: white;";
+            buyBtn.target = "_blank";
+            buyBtn.innerText = "🛒 Comprar / Ver Detalles";
+            buyBtn.href = alt.link;
+
+            const modalBtn = document.querySelector('.modal-card .btn-prime');
+            modalBtn.parentNode.insertBefore(buyBtn, modalBtn);
+
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        function showAdditive(key) {
+            const a = additivesCache[key];
+            if (!a) return;
+            document.getElementById('modal-name').innerText = a.code + " - " + a.name;
+            document.getElementById('modal-harm').innerText = a.harm;
+            document.getElementById('modal-study').innerText = a.study;
+
+            // Deep Details
+            document.getElementById('modal-harm-detail').innerText = a.harm_detail || "Información detallada no disponible para este compuesto específico.";
+            document.getElementById('modal-study-detail').innerText = a.study_detail || "Referencia clínica general sin paper específico asociado.";
+
+            // Reset visibility
+            document.getElementById('modal-harm-detail').style.display = 'none';
+            document.getElementById('modal-study-detail').style.display = 'none';
+
+            // Clinical Markers
+            const riskSection = document.getElementById('modal-risk-section');
+            const adiSection = document.getElementById('modal-adi-section');
+
+            if (a.risk_profile) {
+                document.getElementById('modal-risk').innerText = a.risk_profile;
+                riskSection.style.display = 'block';
+            } else { riskSection.style.display = 'none'; }
+
+            if (a.adi_warning) {
+                document.getElementById('modal-adi').innerText = a.adi_warning;
+                adiSection.style.display = 'block';
+            } else { adiSection.style.display = 'none'; }
+
+            const safetyLabels = { 'safe': 'Seguro / Sin Riesgo', 'warning': 'Riesgo limitado', 'danger': 'Peligro / Riesgo' };
+            document.getElementById('modal-safety').innerHTML = `<span class="level-badge level-${a.safety}">${safetyLabels[a.safety] || a.safety}</span>`;
+
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        function toggleDetail(id) {
+            const el = document.getElementById(id);
+            el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+
+        // IA Functions
+        let selectedIngredients = new Set();
+
+        function openIAMethod(method) {
+            document.getElementById('ia-menu').style.display = 'none';
+            document.getElementById('ia-input-area').style.display = 'block';
+            document.getElementById('ia-method-text').style.display = method === 'text' ? 'block' : 'none';
+            document.getElementById('ia-method-history').style.display = method === 'history' ? 'block' : 'none';
+            document.getElementById('ia-method-camera').style.display = method === 'camera' ? 'block' : 'none';
+            document.getElementById('ia-results').innerHTML = '';
+
+            if (method === 'history') loadIAHistory();
+        }
+
+        async function handleIAPhoto(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const loading = document.getElementById('ia-vision-loading');
+            const container = document.getElementById('ia-vision-container');
+            const detectedList = document.getElementById('ia-detected-ingredients');
+
+            loading.style.display = 'block';
+            container.style.display = 'none';
+            detectedList.innerHTML = '';
+
+            try {
+                const compressedBase64 = await compressImage(file, 600, 0.5);
+                const r = await fetch('/analyze-ingredients-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: compressedBase64 })
+                });
+
+                if (!r.ok) throw new Error("Error en el análisis de imagen");
+                const d = await r.json();
+
+                if (d.ingredients && d.ingredients.length > 0) {
+                    d.ingredients.forEach(ing => {
+                        selectedIngredients.add(ing);
+                        const chip = document.createElement('div');
+                        chip.className = 'history-ingredient-tag selected';
+                        chip.innerText = ing + ' ✓';
+                        chip.style.animation = 'slideIn 0.3s ease-out forwards';
+                        detectedList.appendChild(chip);
+                    });
+                } else if (d.fallback || (d.ingredients && d.ingredients.length === 0)) {
+                    detectedList.innerHTML = '<p style="color:#ff9800; font-size:0.85rem; background:rgba(255,152,0,0.1); padding:10px; border-radius:8px;">⚠️ La IA ha alcanzado su límite diario de análisis. Por favor, escribe los ingredientes manualmente en la sección de texto.</p>';
+                } else {
+                    detectedList.innerHTML = '<p style="color:#888; font-size:0.8rem;">No se detectaron ingredientes claros. Intenta enfocar mejor la foto.</p>';
+                }
+
+            } catch (e) {
+                console.error(e);
+                detectedList.innerHTML = '<p style="color:#ef5350; font-size:0.85rem;">Error al conectar con la IA. Verifica tu conexión o intenta más tarde.</p>';
+            } finally {
+                loading.style.display = 'none';
+                container.style.display = 'block';
+            }
+        }
+
+        function compressImage(file, maxWidth, quality) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = event => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > maxWidth) {
+                            height = (maxWidth / width) * height;
+                            width = maxWidth;
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                };
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        function toBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        function closeIAMethod() {
+            document.getElementById('ia-menu').style.display = 'block';
+            document.getElementById('ia-input-area').style.display = 'none';
+            document.getElementById('ia-results').innerHTML = '';
+            document.getElementById('ia-text-input').value = '';
+            selectedIngredients.clear();
+        }
+
+        async function loadIAHistory() {
+            if (!currentUser) return alert("Inicia sesión para usar el historial.");
+            const container = document.getElementById('ia-history-chips');
+            container.innerHTML = '<p style="text-align:center;">Cargando historial...</p>';
+            try {
+                const r = await fetch('/ia-history-items', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUser })
+                });
+                if (!r.ok) throw new Error("Server error: " + r.status);
+                const items = await r.json();
+
+                container.innerHTML = ''; // Clear loader
+                if (!items || items.length === 0) {
+                    container.innerHTML = '<p style="color:#888; text-align:center;">No hay productos en tu historial.</p>';
+                    return;
+                }
+
+                items.forEach(item => {
+                    if (!item) return;
+                    const chip = document.createElement('div');
+                    chip.className = 'history-ingredient-tag';
+                    chip.innerText = item;
+                    chip.onclick = () => toggleIngredient(chip, item);
+                    container.appendChild(chip);
+                });
+            } catch (e) {
+                console.error("Error loading IA history:", e);
+                container.innerHTML = '<p style="color:var(--danger); text-align:center;">Error al cargar el historial.</p>';
+                alert("Error técnico: " + e.message);
+            }
+        }
+
+        function toggleIngredient(el, name) {
+            if (selectedIngredients.has(name)) {
+                selectedIngredients.delete(name);
+                el.classList.remove('selected');
+            } else {
+                selectedIngredients.add(name);
+                el.classList.add('selected');
+            }
+        }
+
+        async function generateRecipes() {
+            let ingredients = [];
+
+            // Text input
+            const textVal = document.getElementById('ia-text-input').value.trim();
+            if (textVal) ingredients = textVal.split(',').map(i => i.trim());
+
+            // History selection
+            if (selectedIngredients.size > 0) ingredients = [...ingredients, ...Array.from(selectedIngredients)];
+
+            if (ingredients.length === 0) return alert("Por favor, añade o selecciona algunos ingredientes.");
+
+            document.getElementById('ia-loader').style.display = 'block';
+            document.getElementById('ia-results').innerHTML = '';
+
+            try {
+                const r = await fetch('/generate-recipes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUser, ingredients })
+                });
+                const d = await r.json();
+                renderRecipes(d.recipes);
+            } catch (e) { alert("Error al generar recetas. Verifica tu conexión."); }
+            finally { document.getElementById('ia-loader').style.display = 'none'; }
+        }
+
+        function renderRecipes(recipes) {
+            const container = document.getElementById('ia-results');
+            if (!recipes || recipes.length === 0) {
+                container.innerHTML = '<p style="color:#888; text-align:center;">No se pudieron generar recetas en este momento.</p>';
+                return;
+            }
+
+            container.innerHTML = recipes.map(r => `
+                <div class="recipe-card">
+                    <h3 class="recipe-title">${r.title}</h3>
+                    
+                    <div class="recipe-section">
+                        <div class="recipe-section-title">
+                            <span style="font-size: 1.2rem;">🥗</span>
+                            <span>Ingredientes clave</span>
+                        </div>
+                        <div class="recipe-ingredients-list">
+                            ${r.ingredients.map(ing => `<span class="recipe-ing-tag">${ing}</span>`).join('')}
+                        </div>
+                    </div>
+
+                    <div class="recipe-section">
+                        <div class="recipe-section-title">
+                            <span style="font-size: 1.2rem;">👨‍🍳</span>
+                            <span>Preparación Paso a Paso</span>
+                        </div>
+                        <div class="recipe-steps">
+                            ${r.steps.map(s => `<div class="recipe-step-item">${s}</div>`).join('')}
+                        </div>
+                    </div>
+
+                    <div class="recipe-nutrition-box">
+                        <div style="font-size: 1.5rem;">⚡</div>
+                        <div>
+                            <b style="display:block; font-size:0.75rem; color:var(--primary); text-transform:uppercase; margin-bottom:4px; letter-spacing:0.5px;">Análisis Nutricional</b>
+                            <p style="margin:0; font-size:0.9rem; color:#4a6363; line-height:1.4;">${r.nutritional_info}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            container.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+
+</html>
